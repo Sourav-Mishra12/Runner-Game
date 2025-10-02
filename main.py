@@ -2,6 +2,7 @@ import pygame
 from sys import exit
 from random import randint 
 
+
 # -------------------- FUNCTIONS --------------------
 
 def display_score():
@@ -17,9 +18,9 @@ def obstacle_movement(obstacle_list):
             obstacle_rect.x -= 5
 
             if obstacle_rect.bottom == 300:
-                screen.blit(resized_snail, obstacle_rect)
+                screen.blit(resized_snail_1, obstacle_rect)
             else:
-                screen.blit(resized_fly, obstacle_rect)
+                screen.blit(resized_fly_1, obstacle_rect)
 
         obstacle_list = [obstacle for obstacle in obstacle_list if obstacle.x > -100]
         return obstacle_list
@@ -32,9 +33,27 @@ def collisions(player, obstacles):
             return False
     return True
 
+def player_animation():
+    global player_surface , player_index
+
+    
+    if player_rect.bottom < 300 :
+        player_surface = player_jump
+    else: 
+        player_index += 0.1
+        if player_index >= len(player_walk): player_index = 0
+        player_surface = player_walk[int(player_index)]
+
+
+    # player walking animation if the player is on the floor
+    # display the jump surface when player is not on floor
+
+
 # -------------------- INIT --------------------
 
 pygame.init()
+pygame.mixer.init()
+
 screen = pygame.display.set_mode((800, 400))
 pygame.display.set_caption("PIXEL ERA")
 clock = pygame.time.Clock()
@@ -46,6 +65,13 @@ game_active = False
 start_time = 0
 score = 0
 
+# audio 
+
+jump_sound = pygame.mixer.Sound('audio/jump.mp3') # jump sounds
+pygame.mixer.music.load('audio/music.wav')  # bg music
+pygame.mixer.music.play(-1)  # loop forever
+
+
 # Background
 sky_surface = pygame.image.load('graphics/Sky.png').convert()
 ground_surface = pygame.image.load('graphics/ground.png').convert()
@@ -55,21 +81,47 @@ name_surface = small_text.render('PIXEL ERA', False, 'Black')
 name_rect = name_surface.get_rect(topleft=(30, 10))
 
 # Player
-player_surface = pygame.image.load('graphics/player_walk_1.png').convert_alpha()
-player_rect = player_surface.get_rect(midbottom=(80, 300))
+player__walk_1 = pygame.image.load('graphics/player_walk_1.png').convert_alpha()
+player__walk_2 = pygame.image.load('graphics/player_walk_2.png').convert_alpha()
+player_walk = [player__walk_1 , player__walk_2]
+player_index = 0
+player_jump = pygame.image.load('graphics/jump.png').convert_alpha()
+
+player_surface = player_walk[player_index]
+player_rect = player_surface.get_rect(midbottom = (80,300))
+
 player_gravity = 0
 player_stand = pygame.image.load('graphics/player_stand.png').convert_alpha()
 
-# Obstacles
-snail_surface = pygame.image.load('graphics/snail1.png').convert_alpha()
-resized_snail = pygame.transform.scale(snail_surface, (70, 35))
-fly_surface = pygame.image.load('graphics/fly1.png').convert_alpha()
-resized_fly = pygame.transform.scale(fly_surface, (50, 25))
+# SNAIL
+snail_surface_1 = pygame.image.load('graphics/snail1.png').convert_alpha()
+resized_snail_1 = pygame.transform.scale(snail_surface_1, (70, 35))
+snail_surface_2 = pygame.image.load('graphics/snail2.png').convert_alpha()
+resized_snail_2 = pygame.transform.scale(snail_surface_2, (70,35))
+snail_frames = [resized_snail_1 , resized_snail_2]
+snail_frame_index = 0
+snail_surface = snail_frames[snail_frame_index]
+
+# FLY
+fly_surface_1 = pygame.image.load('graphics/Fly1.png').convert_alpha()
+resized_fly_1 = pygame.transform.scale(fly_surface_1, (50, 25))
+fly_surface_2 = pygame.image.load('graphics/Fly2.png').convert_alpha()
+resized_fly_2 = pygame.transform.scale(fly_surface_2, (50, 25))
+fly_frames = [resized_fly_1 , resized_fly_2]
+fly_frame_index = 0
+fly_surface = fly_frames[fly_frame_index]
+
 obstacle_rect_list = []
 
 # Timer
 obstacle_timer = pygame.USEREVENT + 1
 pygame.time.set_timer(obstacle_timer, 1500)
+
+snail_animation_timer = pygame.USEREVENT+2
+pygame.time.set_timer(snail_animation_timer,700)
+
+fly_animation_timer = pygame.USEREVENT+3
+pygame.time.set_timer(fly_animation_timer,1000)
 
 # -------------------- GAME LOOP --------------------
 
@@ -82,7 +134,8 @@ while True:
         if game_active:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and player_rect.bottom >= 300:
-                    player_gravity = -20
+                    player_gravity = -21.5
+                    jump_sound.play()
         else:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 game_active = True
@@ -92,11 +145,25 @@ while True:
                 player_gravity = 0
 
         # ✅ Obstacle spawning MUST be outside of the else:
-        if event.type == obstacle_timer and game_active:
-            if randint(0, 2):
-                obstacle_rect_list.append(resized_snail.get_rect(midbottom=(randint(900, 1100), 300)))
+        if game_active:
+         if event.type == obstacle_timer :
+            if randint(0, 2) == 0 :
+                obstacle_rect_list.append(resized_snail_1.get_rect(midbottom=(randint(900, 1100), 300)))
             else:
-                obstacle_rect_list.append(resized_fly.get_rect(midbottom=(randint(900, 1100), 230)))
+                obstacle_rect_list.append(resized_fly_1.get_rect(midbottom=(randint(900, 1100), 240)))
+
+            if event.type == snail_animation_timer :
+                if snail_frame_index == 0 : snail_frame_index = 1
+                else : snail_frame_index = 0
+                snail_surface = snail_frames[snail_frame_index]
+
+            if event.type == fly_animation_timer:
+                if fly_frame_index == 0 : fly_frame_index = 1
+                else: fly_frame_index = 0 
+                fly_surface = fly_frames[fly_frame_index]
+
+
+        
 
     # -------------------- GAME ACTIVE --------------------
     if game_active:
@@ -109,8 +176,10 @@ while True:
         player_rect.y += player_gravity
         if player_rect.bottom >= 300:
             player_rect.bottom = 300
+        player_animation()
         screen.blit(player_surface, player_rect)
         screen.blit(name_surface, name_rect)
+        
 
         # Obstacles
         obstacle_rect_list = obstacle_movement(obstacle_rect_list)
