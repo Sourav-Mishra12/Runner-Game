@@ -1,11 +1,47 @@
 import pygame 
-from sys import exit
+import sys
 from random import randint 
+import os 
+
+# saving the highscore in APPDATA/PIXELERA/HIGHSCORE.TXT
+
+appdata_dir = os.path.join(os.getenv('LOCALAPPDATA'),'PixelEra')
+os.makedirs(appdata_dir,exist_ok = True)
+HIGH_SCORE_FILE = os.path.join(appdata_dir , 'highscore.txt')
+
 
 
 # -------------------- FUNCTIONS --------------------
 
-def display_score():  
+def resource_path(relative_path):
+    try :
+        base_path = sys._MEIPASS
+    except Exception :
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path,relative_path)
+
+
+
+def load_highscore():   # function to load the highscore used at line 306
+    if os.path.exists(HIGH_SCORE_FILE):
+        with open(HIGH_SCORE_FILE,"r") as f :
+            try :
+                return int(f.read())
+            except ValueError:
+                return 0
+            
+    else :
+        return 0
+    
+
+def save_highscore(score):    # function to save the highscore
+    with open(HIGH_SCORE_FILE,"w") as f:
+        f.write(str(score))
+
+
+
+def display_score():   # function to display score
     if show_collision_text:
         current_time = final_score
     else:
@@ -62,8 +98,8 @@ screen = pygame.display.set_mode((800, 400))
 pygame.display.set_caption("PIXEL ERA")
 clock = pygame.time.Clock()
 
-test_font = pygame.font.Font('fonts/Pixeltype.ttf', 30)  # initialising fonts in the game
-small_text = pygame.font.Font('fonts/Pixeltype.ttf', 25)  # initialising another font in the game
+test_font = pygame.font.Font(resource_path('fonts/Pixeltype.ttf'), 30)  # initialising fonts in the game
+small_text = pygame.font.Font(resource_path('fonts/Pixeltype.ttf'), 25)  # initialising another font in the game
 
 game_active = False  # if the game is active or not
 start_time = 0  # the initialising the start time
@@ -72,12 +108,14 @@ object_speed = 5  # variable used in object movement function
 spawn_object = 1500  # variable for spawning objects
 current_spawn_delay = spawn_object # further usage in the main game loop
 final_score = 0  # in order to freeze score count when collision message shows up , ussing in displayscore function
+highscore = load_highscore() # used to load high score
+
 
 # everytime the speed increases there will be a message shown for that purpose we created these variables , more in the game loop
+
 last_level_speed = 0   
 show_speed_message = False
 new_level_speed = 0
-
 
 
 # variables for collision fallback
@@ -87,40 +125,40 @@ show_collision_text = False
 
 # audio 
 
-collison_sound = pygame.mixer.Sound('audio/collision.mp3') 
+collison_sound = pygame.mixer.Sound(resource_path('audio/collision.mp3')) 
 collison_sound.set_volume(1.0)  # collision sound
-jump_sound = pygame.mixer.Sound('audio/jump.mp3') # jump sounds
-pygame.mixer.music.load('audio/music.wav') 
+jump_sound = pygame.mixer.Sound(resource_path('audio/jump.mp3')) # jump sounds
+pygame.mixer.music.load(resource_path('audio/music.wav')) 
 pygame.mixer.music.set_volume(0.3)# bg music
 pygame.mixer.music.play(-1)  # loop forever
 
 
 # Background
-sky_surface = pygame.image.load('graphics/Sky.png').convert()
-ground_surface = pygame.image.load('graphics/ground.png').convert()
+sky_surface = pygame.image.load(resource_path('graphics/Sky.png')).convert()
+ground_surface = pygame.image.load(resource_path('graphics/ground.png')).convert()
 
 # Title
 name_surface = small_text.render('PIXEL ERA', False, 'Black')
 name_rect = name_surface.get_rect(topleft=(30, 10))
 
 # Player
-player__walk_1 = pygame.image.load('graphics/player_walk_1.png').convert_alpha()
-player__walk_2 = pygame.image.load('graphics/player_walk_2.png').convert_alpha()
+player__walk_1 = pygame.image.load(resource_path('graphics/player_walk_1.png')).convert_alpha()
+player__walk_2 = pygame.image.load(resource_path('graphics/player_walk_2.png')).convert_alpha()
 player_walk = [player__walk_1 , player__walk_2]
 player_index = 0    # index is used to create animations e.g. at index 0 walk_1 and at index 1 walk_2 this will go to and fro and create effects
-player_jump = pygame.image.load('graphics/jump.png').convert_alpha()
+player_jump = pygame.image.load(resource_path('graphics/jump.png')).convert_alpha()
 
 player_surface = player_walk[player_index]  # just to play with indexes and create animations
 player_rect = player_surface.get_rect(midbottom = (80,300))   
 
 player_gravity = 0
-player_stand = pygame.image.load('graphics/player_stand.png').convert_alpha()
+player_stand = pygame.image.load(resource_path('graphics/player_stand.png')).convert_alpha()
 
 # SNAIL
-snail_surface_1 = pygame.image.load('graphics/snail1.png').convert_alpha()
+snail_surface_1 = pygame.image.load(resource_path('graphics/snail1.png')).convert_alpha()
 resized_snail_1 = pygame.transform.scale(snail_surface_1, (70, 35))
 
-snail_surface_2 = pygame.image.load('graphics/snail2.png').convert_alpha()
+snail_surface_2 = pygame.image.load(resource_path('graphics/snail2.png')).convert_alpha()
 resized_snail_2 = pygame.transform.scale(snail_surface_2, (70,35))
 
 snail_frames = [resized_snail_1 , resized_snail_2]   # same as the walk_1 and walk_2
@@ -128,9 +166,9 @@ snail_frame_index = 0
 snail_surface = snail_frames[snail_frame_index]
 
 # FLY
-fly_surface_1 = pygame.image.load('graphics/Fly1.png').convert_alpha()
+fly_surface_1 = pygame.image.load(resource_path('graphics/Fly1.png')).convert_alpha()
 resized_fly_1 = pygame.transform.scale(fly_surface_1, (50, 25))
-fly_surface_2 = pygame.image.load('graphics/Fly2.png').convert_alpha()
+fly_surface_2 = pygame.image.load(resource_path('graphics/Fly2.png')).convert_alpha()
 resized_fly_2 = pygame.transform.scale(fly_surface_2, (50, 25))
 fly_frames = [resized_fly_1 , resized_fly_2]
 fly_frame_index = 0
@@ -141,7 +179,7 @@ obstacle_rect_list = []
 # pause state
 
 game_paused = False 
-pause_surface = pygame.image.load('graphics/pause-button.png').convert_alpha()
+pause_surface = pygame.image.load(resource_path('graphics/pause-button.png')).convert_alpha()
 paused_surface_scaled = pygame.transform.scale(pause_surface , (50,50))
 pause_surface_rect = paused_surface_scaled.get_rect(topright = (780,30))
 
@@ -162,7 +200,7 @@ while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
-            exit()
+            sys.exit()
 
         if event.type == pygame.MOUSEBUTTONDOWN :
             if pause_surface_rect.collidepoint(event.pos):
@@ -274,7 +312,10 @@ while True:
             collided_rect = collided_surface.get_rect(center = (400,200))
             screen.blit(collided_surface,collided_rect)
 
-            if pygame.time.get_ticks() - collision_time >= 1000:   # waiting screen after collision 
+            if pygame.time.get_ticks() - collision_time >= 1000: 
+                if final_score > highscore :
+                    highscore = final_score
+                    save_highscore(highscore)
                 game_active = False
                 show_collision_text = False
 
@@ -305,8 +346,8 @@ while True:
     else:
         screen.fill((94, 129, 162))
         resized_player = pygame.transform.scale(player_stand, (150, 200))
-        score_surface = small_text.render(f'SCORE: {score}', False, 'Black')
-        big_font = pygame.font.Font('fonts/Pixeltype.ttf', 50)
+        score_surface = small_text.render(f'SCORE: {score} --- HIGH SCORE : {highscore}', False, 'Black')
+        big_font = pygame.font.Font(resource_path('fonts/Pixeltype.ttf'), 50)
         game_name = big_font.render('PIXEL ERA', True, 'Black')
         restart_text = test_font.render('PRESS SPACE TO START', True, 'Black')
 
