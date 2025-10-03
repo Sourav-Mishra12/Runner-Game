@@ -30,8 +30,8 @@ def obstacle_movement(obstacle_list):
 def collisions(player, obstacles):
     for obstacle_rect in obstacles:
         if player.colliderect(obstacle_rect):
-            return False
-    return True
+            return True
+    return False
 
 def player_animation():
     global player_surface , player_index
@@ -65,10 +65,18 @@ game_active = False
 start_time = 0
 score = 0
 
+# variables for collision fallback
+
+collision_time = 0
+show_collision_text = False
+
 # audio 
 
+collison_sound = pygame.mixer.Sound('audio/collision.mp3') 
+collison_sound.set_volume(1.0)  # collision sound
 jump_sound = pygame.mixer.Sound('audio/jump.mp3') # jump sounds
-pygame.mixer.music.load('audio/music.wav')  # bg music
+pygame.mixer.music.load('audio/music.wav') 
+pygame.mixer.music.set_volume(0.3)# bg music
 pygame.mixer.music.play(-1)  # loop forever
 
 
@@ -113,6 +121,14 @@ fly_surface = fly_frames[fly_frame_index]
 
 obstacle_rect_list = []
 
+# pause state
+
+game_paused = False 
+pause_surface = pygame.image.load('graphics/pause-button.png').convert_alpha()
+paused_surface_scaled = pygame.transform.scale(pause_surface , (60,60))
+pause_surface_rect = paused_surface_scaled.get_rect(topright = (780,30))
+
+
 # Timer
 obstacle_timer = pygame.USEREVENT + 1
 pygame.time.set_timer(obstacle_timer, 1500)
@@ -130,6 +146,23 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
+
+        if event.type == pygame.MOUSEBUTTONDOWN :
+            if pause_surface_rect.collidepoint(event.pos):
+                game_paused = not game_paused
+                if game_paused :
+                    pygame.mixer.music.pause()
+                    pygame.time.set_timer(obstacle_timer , 0)
+                    pygame.time.set_timer(snail_animation_timer ,0)
+                    pygame.time.set_timer(fly_animation_timer,0)
+
+                else:
+                    pygame.mixer.music.unpause()
+                    pygame.time.set_timer(obstacle_timer, 1500)
+                    pygame.time.set_timer(snail_animation_timer,700)
+                    pygame.time.set_timer(fly_animation_timer,1000)
+
+
 
         if game_active:
             if event.type == pygame.KEYDOWN:
@@ -163,12 +196,12 @@ while True:
                 fly_surface = fly_frames[fly_frame_index]
 
 
-        
 
     # -------------------- GAME ACTIVE --------------------
-    if game_active:
+    if game_active and not game_paused :
         screen.blit(sky_surface, (0, 0))
         screen.blit(ground_surface, (0, 300))
+        screen.blit(paused_surface_scaled , pause_surface_rect)
         score = display_score()
 
         # Player movement
@@ -176,16 +209,38 @@ while True:
         player_rect.y += player_gravity
         if player_rect.bottom >= 300:
             player_rect.bottom = 300
-        player_animation()
-        screen.blit(player_surface, player_rect)
-        screen.blit(name_surface, name_rect)
+
+
+        if show_collision_text :
+            default_font = pygame.font.SysFont(None,50)
+            collided_surface = default_font.render('!! COLLIDED !!',True,'Red')
+            collided_rect = collided_surface.get_rect(center = (400,200))
+            screen.blit(collided_surface,collided_rect)
+
+            if pygame.time.get_ticks() - collision_time >= 1000:
+                game_active = False
+                show_collision_text = False
+
+
+        else:
+           player_animation()
+           screen.blit(player_surface, player_rect)
+           screen.blit(name_surface, name_rect)
         
-
         # Obstacles
-        obstacle_rect_list = obstacle_movement(obstacle_rect_list)
+           obstacle_rect_list = obstacle_movement(obstacle_rect_list)
 
-        # Collision detection
-        game_active = collisions(player_rect, obstacle_rect_list)
+            # Collision detection
+
+           if collisions(player_rect , obstacle_rect_list):
+               collison_sound.play()  # collision sound 
+               show_collision_text = True
+               collision_time = pygame.time.get_ticks()
+    elif game_paused :
+        paused_text = test_font.render('PAUSE !! ',False,'Red')
+        paused_rect = paused_text.get_rect(center = (400,200))
+        screen.blit(paused_text , paused_rect)
+    
 
     # -------------------- GAME INACTIVE (Start / Restart) --------------------
     else:
