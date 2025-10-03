@@ -96,6 +96,8 @@ pygame.mixer.init()
 
 screen = pygame.display.set_mode((800, 400))
 pygame.display.set_caption("PIXEL ERA")
+icon = pygame.image.load(resource_path('graphics/my_icon.png'))
+pygame.display.set_icon(icon) 
 clock = pygame.time.Clock()
 
 test_font = pygame.font.Font(resource_path('fonts/Pixeltype.ttf'), 30)  # initialising fonts in the game
@@ -337,7 +339,9 @@ while True:
                final_score = score
 
     elif game_paused :   # if the game is paused then this will happen
-        paused_text = test_font.render('PAUSE !! ',False,'Red')
+        
+        pause = pygame.font.Font(resource_path('fonts/Pixeltype.ttf'), 60)
+        paused_text = pause.render('PAUSED !! ',False,'Red')
         paused_rect = paused_text.get_rect(center = (400,100))
         screen.blit(paused_text , paused_rect)
     
@@ -351,10 +355,16 @@ while True:
         game_name = big_font.render('PIXEL ERA', True, 'Black')
         restart_text = test_font.render('PRESS SPACE TO START', True, 'Black')
 
+        instruction_font = pygame.font.Font(resource_path('fonts/Pixeltype.ttf'), 25)
+        instruction_text = instruction_font.render('PRESS SPACE TO JUMP - AVOID ENEMIES TO SURVIVE!', True, 'Black')
+        instruction_rect = instruction_text.get_rect(center=(400, 330))
+
+
         screen.blit(game_name, (300, 30))
         screen.blit(restart_text, (270, 350))
         screen.blit(resized_player, (300, 100))
         screen.blit(score_surface, (10, 50))
+        screen.blit(instruction_text,instruction_rect)
 
     pygame.display.update()
     clock.tick(60)
