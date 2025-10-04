@@ -112,6 +112,11 @@ current_spawn_delay = spawn_object # further usage in the main game loop
 final_score = 0  # in order to freeze score count when collision message shows up , ussing in displayscore function
 highscore = load_highscore() # used to load high score
 
+# making variables to make the transition happen of the background
+
+transition_started = False
+transition_complete = False
+fade_alpha = 0
 
 # everytime the speed increases there will be a message shown for that purpose we created these variables , more in the game loop
 
@@ -137,6 +142,7 @@ pygame.mixer.music.play(-1)  # loop forever
 
 # Background
 sky_surface = pygame.image.load(resource_path('graphics/Sky.png')).convert()
+alt_sky_surface = pygame.image.load(resource_path('graphics/background_2.png')).convert()  # alternative background
 ground_surface = pygame.image.load(resource_path('graphics/ground.png')).convert()
 
 # Title
@@ -205,7 +211,7 @@ while True:
             sys.exit()
 
         if event.type == pygame.MOUSEBUTTONDOWN :
-            if pause_surface_rect.collidepoint(event.pos):
+            if game_active and pause_surface_rect.collidepoint(event.pos):   #this is for the pause functionality in the game
                 game_paused = not game_paused
                 if game_paused :
                     pygame.mixer.music.pause()
@@ -255,6 +261,32 @@ while True:
     # -------------------- GAME ACTIVE --------------------
     if game_active and not game_paused :   # if the game is not paused and is active 
         screen.blit(sky_surface, (0, 0))
+
+        if score > 50 and not transition_started and not transition_complete :
+            transition_started = True
+            fade_alpha = 0
+
+        if transition_complete :
+            screen.blit(alt_sky_surface,(0,0))
+
+        elif transition_started :
+            screen.blit(sky_surface,(0,0))
+
+            fading_sky = alt_sky_surface.copy()
+            fade_alpha += 5
+            if fade_alpha >= 255:
+                fade_alpha = 255
+                transition_started = False
+                transition_complete = True
+
+            fading_sky.set_alpha(fade_alpha)
+            screen.blit(fading_sky , (0,0))
+
+        else :
+          screen.blit(sky_surface,(0,0))
+
+
+
         screen.blit(ground_surface, (0, 300))
         screen.blit(paused_surface_scaled , pause_surface_rect)
         score = display_score()
@@ -264,22 +296,22 @@ while True:
                 speed_text = test_font.render('SPEED INCREASED !! ' , True , 'Red')
                 speed_text_rect = speed_text.get_rect(center = (400,200))
                 screen.blit(speed_text , speed_text_rect)
-        else :
-            show_speed_message = False
+            else :
+              show_speed_message = False
 
 
         # scaling the speed of obstacles spawning
         # speed of spawning obstacles
 
-        if score >= 100 :
+        if score >= 150 :
             new_level_speed = 4
             object_speed = 10
-            spawn_object = 800
-        elif score > 70 :
+            spawn_object = 900
+        elif score > 100 :
             new_level_speed = 3
             object_speed = 8
             spawn_object = 1000
-        elif  score > 40 :
+        elif  score > 50 :
             new_level_speed = 2
             object_speed = 6
             spawn_object = 1200
@@ -348,6 +380,7 @@ while True:
 
     # -------------------- GAME INACTIVE (Start / Restart) --------------------
     else:
+       
         screen.fill((94, 129, 162))
         resized_player = pygame.transform.scale(player_stand, (150, 200))
         score_surface = small_text.render(f'SCORE: {score} --- HIGH SCORE : {highscore}', False, 'Black')
